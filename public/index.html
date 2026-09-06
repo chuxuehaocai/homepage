@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f7f7f4" />
+    <meta
+      name="description"
+      content="初雪（chuxuehaocai）的个人主页。偏爱 Kotlin，关注 JVM、Minecraft、后端与逆向工程。"
+    />
+    <meta property="og:title" content="初雪 — chuxuehaocai" />
+    <meta property="og:description" content="Please, Forgive me and “Purple”" />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="https://avatars.githubusercontent.com/u/282148007?v=4&amp;s=320"
+    />
+    <title>初雪 — chuxuehaocai</title>
+    <script>
+      (() => {
+        const root = document.documentElement;
+        let savedTheme = null;
+
+        try {
+          savedTheme = localStorage.getItem("chuxue-theme");
+        } catch {
+          // The system preference is still available when storage is blocked.
+        }
+
+        const theme =
+          savedTheme === "light" || savedTheme === "dark"
+            ? savedTheme
+            : matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+
+        root.dataset.theme = theme;
+        root.style.colorScheme = theme;
+        root.classList.add("has-js");
+
+        const themeColor = document.querySelector('meta[name="theme-color"]');
+        themeColor.content = theme === "dark" ? "#111210" : "#f7f7f4";
+      })();
+    </script>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/theme.js" defer></script>
+  </head>
+  <body>
+    <button class="theme-toggle" id="theme-toggle" type="button">
+      <svg
+        class="theme-icon theme-icon--moon"
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        width="19"
+        height="19"
+      >
+        <path d="M20.2 15.4A8.5 8.5 0 0 1 8.6 3.8 8.5 8.5 0 1 0 20.2 15.4Z" />
+      </svg>
+      <svg
+        class="theme-icon theme-icon--sun"
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        width="19"
+        height="19"
+      >
+        <circle cx="12" cy="12" r="3.7" />
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42" />
+      </svg>
+    </button>
+
+    <main class="page">
+      <article class="profile" aria-labelledby="profile-name">
+        <header class="identity">
+          <img
+            class="avatar"
+            src="https://avatars.githubusercontent.com/u/282148007?v=4&amp;s=160"
+            alt=""
+            width="60"
+            height="60"
+            decoding="async"
+            fetchpriority="high"
+          />
+          <div>
+            <h1 id="profile-name">初雪</h1>
+            <div class="identity-meta">
+              <a
+                class="handle"
+                href="https://github.com/chuxuehaocai"
+                target="_blank"
+                rel="noreferrer"
+              >@chuxuehaocai</a>
+              <span>Empty Sekai</span>
+            </div>
+          </div>
+        </header>
+
+        <p class="lead" lang="en">Please, Forgive me and “Purple”</p>
+
+        <div class="about">
+          <p>
+            我是 chuxuehaocai。<br />
+            我怎么样取决于你，而不是我。<br />
+            你觉得我怎么样，我就是怎么样的。
+          </p>
+          <p>
+            偏爱 Kotlin，擅长 Java。日常围绕 JVM、Minecraft、后端与逆向工程折腾，也在学习
+            Python、Rust 和 x86 汇编。
+          </p>
+          <p>
+            常听 ヨルシカ、アンノウン・マザーグース 与 稲葉曇；常玩 Project Sekai、Counter-Strike
+            2、Minecraft、osu! 和 maimai。
+          </p>
+        </div>
+
+        <nav class="links" aria-label="外部链接">
+          <a href="https://github.com/chuxuehaocai" target="_blank" rel="noreferrer">
+            GitHub<span class="visually-hidden">（在新窗口打开）</span>
+          </a>
+          <a href="https://naominet.dev" target="_blank" rel="noreferrer">
+            Blog<span class="visually-hidden">（在新窗口打开）</span>
+          </a>
+        </nav>
+      </article>
+
+      <footer class="footer">
+        <p><span lang="ja">人の数だけ美学がある。</span><span lang="en">Isn't it?</span></p>
+      </footer>
+    </main>
+  </body>
+</html>
