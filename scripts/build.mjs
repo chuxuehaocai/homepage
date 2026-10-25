@@ -38,9 +38,20 @@ function parseScalar(value) {
 }
 
 function makeSlug(value) {
-  return String(value)
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, '-')
+  const normalized = String(value)
+    .normalize('NFKD')
+    .replace(/\p{Mark}+/gu, '')
+    .toLowerCase();
+  const asciiSlug = normalized
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  if (asciiSlug) return asciiSlug;
+
+  // File names made only of non-ASCII characters (e.g. 随笔.md) would otherwise
+  // produce an empty slug, which joins to the blog root and overwrites index.html.
+  return normalized
+    .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
     .replace(/^-+|-+$/g, '');
 }
 
@@ -56,12 +67,17 @@ function parseFrontmatter(source, fileName, fallbackDate) {
       .split(/\r?\n/)
       .map((line) => line.trim())
       .find((line) => line && !line.startsWith('#')) || title;
+    const slug = makeSlug(fileName.replace(/\.md$/, ''));
+
+    if (!slug) {
+      throw new Error('Post ' + fileName + ' has no usable slug; add a slug to its frontmatter');
+    }
 
     return {
       title,
       description,
       date: fallbackDate,
-      slug: makeSlug(fileName.replace(/\.md$/, '')),
+      slug,
       tags: [],
       source: content || body,
     };
@@ -309,6 +325,7 @@ function pageTemplate({ title, description, content, active = 'blog', canonicalP
 async function readPosts() {
   const entries = await readdir(postsDirectory, { withFileTypes: true }).catch(() => []);
   const posts = [];
+  const slugs = new Map();
 
   for (const entry of entries) {
     if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
@@ -318,6 +335,14 @@ async function readPosts() {
     const fallbackDate = fileStats.mtime.toISOString().slice(0, 10);
     const post = parseFrontmatter(source, entry.name, fallbackDate);
     if (post.published === false || post.draft === true) continue;
+
+    if (slugs.has(post.slug)) {
+      throw new Error(
+        'Posts ' + slugs.get(post.slug) + ' and ' + entry.name +
+        ' both resolve to slug "' + post.slug + '"; set a distinct slug in the frontmatter',
+      );
+    }
+    slugs.set(post.slug, entry.name);
 
     const words = post.source.trim().split(/\s+/).filter(Boolean).length;
     post.readingTime = Math.max(1, Math.ceil(words / 260));

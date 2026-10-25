@@ -32,6 +32,10 @@ tags: ["标签"]
 
 如果省略 frontmatter，系统会使用一级标题、文件修改日期和文件名生成默认信息。推荐保留 frontmatter，方便稳定控制标题、日期和摘要。
 
+文章 URL 由 `slug` 决定。未填写 `slug` 时会从文件名生成：优先保留 ASCII 字母和数字（`Hello World.md` → `/blog/hello-world/`）；
+如果文件名里没有 ASCII 字母或数字（例如 `随笔.md`），则保留中文（`/blog/随笔/`）。如果两篇文章生成了相同的 slug，
+构建会直接报错，此时请在 frontmatter 里手动指定不同的 `slug`。
+
 提交后，构建脚本会生成文章页面。`published: false` 或 `draft: true` 的文章不会被发布。
 
 ## 构建并预览生产文件
