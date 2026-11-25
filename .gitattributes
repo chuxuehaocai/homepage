@@ -1,0 +1,13 @@
+# 文本文件统一为 LF；编码统一为 UTF-8（不带 BOM）。
+* text=auto eol=lf
+
+# 图片与字体是二进制，别让 git 做换行或文本处理。
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.woff binary
+*.woff2 binary

@@ -42,6 +42,15 @@ const fixture = [
   '',
   '<script>alert(1)</script><iframe src="x"></iframe>',
   '',
+  '- 列表项一',
+  '- 列表项二',
+  '- 列表项三',
+  '',
+  '1. 有序一',
+  '2. 有序二',
+  '',
+  '中文编码检查：你好。',
+  '',
 ].join('\n');
 
 const results = [];
@@ -122,6 +131,20 @@ try {
     /--font-sans:/.test(ruleRoot) && /body\s*\{[^}]*font-family:\s*var\(--font-sans\)/.test(css));
   record('正文不再使用衬线字族',
     !/Noto Serif CJK SC|Source Han Serif SC|Songti SC|STSong/.test(css));
+
+  // 列表必须合并成一整个 <ul>/<ol>，不能每项新开一个。
+  const ulBlocks = body.match(/<ul>[\s\S]*?<\/ul>/g) ?? [];
+  const olBlocks = body.match(/<ol>[\s\S]*?<\/ol>/g) ?? [];
+  record('连续无序列表合并为单个 <ul>',
+    ulBlocks.length === 1 && (ulBlocks[0].match(/<li>/g) ?? []).length === 3,
+    ulBlocks.length + ' 个 ul, ' + (ulBlocks[0]?.match(/<li>/g) ?? []).length + ' 项');
+  record('连续有序列表合并为单个 <ol>',
+    olBlocks.length === 1 && (olBlocks[0].match(/<li>/g) ?? []).length === 2);
+
+  // 编码回归：中文必须原样出现，且不得有替换字符或 mojibake 特征。
+  record('中文按 UTF-8 正确渲染', body.includes('中文编码检查：你好。'));
+  record('无 U+FFFD 替换字符', !body.includes('\uFFFD'));
+  record('无 mojibake 特征字', !/浣|鎴|鈥|锛|銆|鐨|浠|涓|鏄/.test(body));
 
   // 只动 mtime、不动内容：发布时间必须保持不变。
   const hashBefore = createHash('sha256').update(readFileSync(fixturePath)).digest('hex');

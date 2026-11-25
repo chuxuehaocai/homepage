@@ -734,7 +734,9 @@ function renderMarkdown(source) {
     const unorderedItem = line.match(/^[-*]\s+(.+)$/);
     const orderedItem = line.match(/^\d+\.\s+(.+)$/);
     if (unorderedItem || orderedItem) {
-      breakBlocks();
+      // 只收掉段落和引用；列表本身要继续累积，否则每个列表项都会新开一个 <ul>。
+      flushParagraph();
+      flushQuotes();
       const nextListType = unorderedItem ? 'ul' : 'ol';
       if (listType !== nextListType) {
         closeList();
