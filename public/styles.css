@@ -7,6 +7,26 @@
   --accent: #6f5b83;
   --selection: #ddd2e8;
   --page-gutter: clamp(1.5rem, 10vw, 11rem);
+  /* 站点正文 / 标题共用这一套无衬线字族，改这里就等于改全站。 */
+  --font-sans:
+    "MiSans VF",
+    "MiSans",
+    "Noto Sans CJK SC",
+    "Source Han Sans SC",
+    "PingFang SC",
+    "Microsoft YaHei",
+    sans-serif;
+  /* 页脚的日文明体，保持原样。 */
+  --font-serif-jp:
+    "Yu Mincho",
+    "Hiragino Mincho ProN",
+    "Noto Serif CJK JP",
+    "Source Han Serif JP",
+    serif;
+  /* 首页背景图（图床里的 f8fq.png），blog 页面不受影响。 */
+  --home-backdrop: url("/images/f8fq.png");
+  /* 背景图透明度，只在首页生效。 */
+  --home-backdrop-alpha: 0.4;
 }
 
 :root[data-theme="dark"] {
@@ -50,14 +70,7 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--text);
-  font-family:
-    "MiSans VF",
-    "MiSans",
-    "Noto Sans CJK SC",
-    "Source Han Sans SC",
-    "PingFang SC",
-    "Microsoft YaHei",
-    sans-serif;
+  font-family: var(--font-sans);
   transition:
     background-color 180ms ease,
     color 180ms ease;
@@ -92,6 +105,26 @@ button:focus-visible {
   min-height: 100vh;
   min-height: 100svh;
   margin-left: var(--page-gutter);
+}
+
+/* 首页背景：铺满视口，40% 不透明度，滚动时固定不动。
+   body::before 独立承载图片，所以 --background 的底色和明暗主题仍然照常工作。 */
+body.home {
+  position: relative;
+  isolation: isolate;
+}
+
+body.home::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background-image: var(--home-backdrop);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: var(--home-backdrop-alpha);
+  content: "";
+  pointer-events: none;
 }
 
 .profile {
@@ -179,12 +212,7 @@ h1 {
 .footer {
   padding-bottom: clamp(1.75rem, 5vh, 3rem);
   color: var(--muted);
-  font-family:
-    "Yu Mincho",
-    "Hiragino Mincho ProN",
-    "Noto Serif CJK JP",
-    "Source Han Serif JP",
-    serif;
+  font-family: var(--font-serif-jp);
   font-size: 0.8rem;
   line-height: 1.7;
 }
@@ -534,14 +562,10 @@ h1 {
 
 .post-content {
   padding-top: 2.6rem;
-  font-family:
-    "Noto Serif CJK SC",
-    "Source Han Serif SC",
-    "Songti SC",
-    "STSong",
-    serif;
+  /* 与站点 Header 同一套字体：正文不再用衬线，统一走 --font-sans。 */
+  font-family: var(--font-sans);
   font-size: 1.02rem;
-  line-height: 2;
+  line-height: 1.95;
 }
 
 .post-content > :first-child {
@@ -551,14 +575,7 @@ h1 {
 .post-content h2,
 .post-content h3 {
   margin: 2.7rem 0 0.9rem;
-  font-family:
-    "MiSans VF",
-    "MiSans",
-    "Noto Sans CJK SC",
-    "Source Han Sans SC",
-    "PingFang SC",
-    "Microsoft YaHei",
-    sans-serif;
+  font-family: var(--font-sans);
   font-weight: 620;
   letter-spacing: -0.025em;
   line-height: 1.35;
@@ -631,10 +648,186 @@ h1 {
   font-size: 0.8rem;
 }
 
+.post-content figure {
+  margin: 2rem 0;
+}
+
+.post-content figcaption {
+  margin-top: 0.7rem;
+  color: var(--muted);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  line-height: 1.7;
+  text-align: center;
+}
+
+/* Markdown 里的图片：<img src="images/x.jpg"> 与 ![alt](images/x.jpg) 都落到这里 */
+.post-content img,
+.post-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 2rem auto;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  background: var(--surface);
+}
+
+.post-content .post-image--center {
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.post-content .post-image--left {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+.post-content .post-image--right {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+.post-content .text-center {
+  text-align: center;
+}
+
+.post-content .text-left {
+  text-align: left;
+}
+
+.post-content .text-right {
+  text-align: right;
+}
+
+.post-content p[class*="text-"] img,
+.post-content div[class*="text-"] img {
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.post-content img[width],
+.post-content img[height] {
+  max-width: 100%;
+}
+
 .post-navigation {
   margin-top: 3rem;
   padding-top: 1.4rem;
   border-top: 1px solid var(--line);
+}
+
+/* 评论 */
+.post-comments {
+  margin-top: 3.5rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--line);
+}
+
+.post-comments .section-heading {
+  margin-bottom: 1.1rem;
+}
+
+.post-comments .section-heading h2 {
+  font-size: 1rem;
+  font-weight: 620;
+}
+
+.giscus-mount {
+  min-height: 4rem;
+}
+
+.giscus-mount iframe {
+  width: 100%;
+}
+
+.comments-setup {
+  margin: 0;
+  padding: 1.1rem 1.2rem;
+  border: 1px dashed var(--line);
+  border-radius: 0.4rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.8;
+}
+
+.comments-setup code {
+  padding: 0.1em 0.3em;
+  border-radius: 0.2rem;
+  background: var(--accent-soft);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.85em;
+}
+
+/* 图床 */
+.image-bank {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.2rem;
+}
+
+.image-card {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface);
+}
+
+.image-card-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 0.35rem;
+  background: var(--background);
+}
+
+.image-card-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.image-card figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  min-width: 0;
+  margin-top: 0.75rem;
+}
+
+.image-card-name {
+  overflow: hidden;
+  font-size: 0.86rem;
+  font-weight: 560;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-card-meta {
+  color: var(--muted);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.7rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.image-card-snippet {
+  display: block;
+  margin-top: 0.2rem;
+  padding: 0.42rem 0.5rem;
+  border-radius: 0.3rem;
+  background: var(--background);
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .site-footer {
@@ -645,25 +838,13 @@ h1 {
   padding-top: 1.35rem;
   border-top: 1px solid var(--line);
   color: var(--muted);
-  font-family:
-    "Yu Mincho",
-    "Hiragino Mincho ProN",
-    "Noto Serif CJK JP",
-    "Source Han Serif JP",
-    serif;
+  font-family: var(--font-serif-jp);
   font-size: 0.78rem;
   line-height: 1.7;
 }
 
 .site-footer a {
-  font-family:
-    "MiSans VF",
-    "MiSans",
-    "Noto Sans CJK SC",
-    "Source Han Sans SC",
-    "PingFang SC",
-    "Microsoft YaHei",
-    sans-serif;
+  font-family: var(--font-sans);
   text-decoration: none;
 }
 
