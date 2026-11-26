@@ -146,6 +146,24 @@ try {
   record('无 U+FFFD 替换字符', !body.includes('\uFFFD'));
   record('无 mojibake 特征字', !/浣|鎴|鈥|锛|銆|鐨|浠|涓|鏄/.test(body));
 
+  // RSS：链接必须是正式域名，不能把内网地址写进线上 feed。
+  const feed = readFileSync(projectPath('dist', 'feed.xml'), 'utf8');
+  record('feed 不含 localhost / 127.0.0.1',
+    !/localhost|127\.0\.0\.1|\[::1\]/.test(feed));
+  record('feed 条目指向正式域名',
+    /<link>https:\/\/naominet\.dev\/blog\/self-check\/<\/link>/.test(feed),
+    (feed.match(/<link>([^<]+)<\/link>/) ?? [])[1]);
+  record('feed 声明 atom:link 自身地址',
+    /<atom:link href="https:\/\/naominet\.dev\/feed\.xml" rel="self"/.test(feed));
+  record('feed 的中文 slug 已百分号编码',
+    /<link>https:\/\/naominet\.dev\/blog\/%E9%9A%8F%E7%AC%94\/<\/link>/.test(feed));
+  record('feed 是可解析的 XML（UTF-8 无坏字节）',
+    !feed.includes('\uFFFD') && feed.startsWith('<?xml'));
+
+  // canonical 必须与 feed 用同一个站点地址。
+  record('canonical 指向正式域名',
+    html.includes('<link rel="canonical" href="https://naominet.dev/blog/self-check/" />'));
+
   // 只动 mtime、不动内容：发布时间必须保持不变。
   const hashBefore = createHash('sha256').update(readFileSync(fixturePath)).digest('hex');
   const timeBefore = readManifest()[fixtureName].modified;

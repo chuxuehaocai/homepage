@@ -12,7 +12,12 @@ const postsDirectory = join(projectRoot, 'content', 'posts');
 const imageBankDirectory = join(postsDirectory, 'images');
 // 记录每篇 Markdown 的修改时间，避免 CI 检出后时间戳变成构建时间。
 const publishTimesPath = join(projectRoot, 'content', 'posts', '.publish-times.json');
-const siteUrl = (process.env.SITE_URL ?? 'http://localhost:4173').replace(/\/$/, '');
+// 站点根地址：RSS 的 <link>/<guid>、canonical 都由它拼出来。
+// 之前默认值是 localhost:4173，没配环境变量时就把内网地址写进了线上 feed。
+// 现在按「显式环境变量 → 部署平台提供的域名 → 正式域名」依次取，本地预览才落到 localhost。
+const FALLBACK_SITE_URL = 'https://naominet.dev';
+const LOCAL_SITE_URL = 'http://localhost:4173';
+const siteUrl = resolveSiteUrl();
 const siteTimeZone = process.env.SITE_TIME_ZONE ?? 'Asia/Shanghai';
 const refreshPublishTimes = /^(1|true|yes|refresh|force)$/i.test(
   String(process.env.PUBLISH_TIMES ?? '').trim(),
@@ -46,6 +51,77 @@ function escapeHtml(value) {
 
 function escapeAttribute(value) {
   return escapeHtml(value).replaceAll(templateTick, '&#96;');
+}
+
+/**
+ * 文章 URL 路径。中文 slug（如 "随笔"）必须是百分号编码的，
+ * 否则 RSS 阅读器、部分手上会把它当成非法 URI 直接拒收。
+ */
+function postPath(post) {
+  return '/blog/' + post.slug.split('/').map(encodeURIComponent).join('/') + '/';
+}
+
+/* ------------------------------------------------------------------ *
+ * 站点地址：RSS 与 canonical 都依赖它，绝不能落到内网地址上
+ * ------------------------------------------------------------------ */
+
+function normalizeSiteUrl(value) {
+  const text = String(value ?? '').trim();
+
+  if (!text) return null;
+
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : 'https://' + text;
+
+  try {
+    const url = new URL(withScheme);
+
+    if (!url.hostname) return null;
+
+    return (url.origin + url.pathname).replace(/\/+$/, '');
+  } catch {
+    return null;
+  }
+}
+
+function resolveSiteUrl() {
+  // 1) 显式设置优先。
+  const explicit = normalizeSiteUrl(process.env.SITE_URL);
+  if (explicit) return explicit;
+
+  // 2) 部署平台自带的正式域名，省掉手动配置这一步。
+  const platformCandidates = [
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    process.env.VERCEL_BRANCH_URL,
+    process.env.VERCEL_URL,
+    process.env.CF_PAGES_URL,
+    process.env.URL,
+    process.env.DEPLOY_PRIME_URL,
+  ];
+
+  for (const candidate of platformCandidates) {
+    const resolved = normalizeSiteUrl(candidate);
+
+    if (resolved && !isLocalHost(resolved)) {
+      console.log('Site URL from deployment platform: ' + resolved);
+      return resolved;
+    }
+  }
+
+  // 3) 正式域名兜底；本地跑 dev/preview 才退回 localhost。
+  const isLocalBuild = !process.env.CI && !process.env.VERCEL && !process.env.NETLIFY;
+
+  if (isLocalBuild && process.argv.includes('--local')) return LOCAL_SITE_URL;
+
+  return FALLBACK_SITE_URL;
+}
+
+function isLocalHost(url) {
+  try {
+    const host = new URL(url).hostname;
+    return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+  } catch {
+    return false;
+  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -1139,7 +1215,7 @@ function postCard(post) {
   return '<article class="post-card">' +
     '<div class="post-card-meta">' + timeMarkup(post) +
     '<span>' + post.readingTime + ' 分钟阅读</span></div>' +
-    '<h3><a href="/blog/' + escapeAttribute(post.slug) + '/">' + escapeHtml(post.title) + '</a></h3>' +
+    '<h3><a href="' + escapeAttribute(postPath(post)) + '">' + escapeHtml(post.title) + '</a></h3>' +
     '<p>' + escapeHtml(post.description) + '</p>' +
     tagsMarkup(post.tags) +
     '</article>';
@@ -1356,17 +1432,18 @@ async function writeBlog(posts, images) {
         title: post.title,
         description: post.description,
         content: postContent,
-        canonicalPath: '/blog/' + post.slug + '/',
+        canonicalPath: postPath(post),
         publishedTime: post.iso,
       }),
     );
   }
 
+  const feedUrl = siteUrl + '/feed.xml';
   const rssItems = posts.map((post) =>
     '\n    <item>\n' +
     '      <title>' + escapeHtml(post.title) + '</title>\n' +
-    '      <link>' + siteUrl + '/blog/' + post.slug + '/</link>\n' +
-    '      <guid>' + siteUrl + '/blog/' + post.slug + '/</guid>\n' +
+    '      <link>' + siteUrl + postPath(post) + '</link>\n' +
+    '      <guid isPermaLink="true">' + siteUrl + postPath(post) + '</guid>\n' +
     '      <pubDate>' + new Date(post.instant).toUTCString() + '</pubDate>\n' +
     '      <description>' + escapeHtml(post.description) + '</description>\n' +
     '    </item>'
@@ -1375,11 +1452,18 @@ async function writeBlog(posts, images) {
   await writeFile(
     join(outputDirectory, 'feed.xml'),
     '<?xml version="1.0" encoding="UTF-8"?>\n' +
-    '<rss version="2.0"><channel>\n' +
+    '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n' +
+    '<channel>\n' +
     '  <title>初雪的博客</title>\n' +
     '  <link>' + siteUrl + '/blog/</link>\n' +
+    // 频道自己的地址。没有 atom:link 时不少阅读器会把 feed 的 URL 猜错。
+    '  <atom:link href="' + feedUrl + '" rel="self" type="application/rss+xml" />\n' +
     '  <description></description>\n' +
-    '  <language>zh-CN</language>' + rssItems + '\n' +
+    '  <language>zh-CN</language>' +
+    (posts.length
+      ? '\n  <lastBuildDate>' + new Date(posts[0].instant).toUTCString() + '</lastBuildDate>'
+      : '') +
+    rssItems + '\n' +
     '</channel></rss>\n',
   );
 
